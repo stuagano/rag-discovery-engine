@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Credentials
+*.json
+!package.json
+service-account-*.json
+credentials/
+
+# Data
+data/
+*.csv
+*.parquet
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
