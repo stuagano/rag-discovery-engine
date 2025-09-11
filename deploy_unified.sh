@@ -415,6 +415,12 @@ EOF
     log_info "Deploying basic BigQuery RAG..."
     python3 src/cloud_shell_rag.py deploy
     
+    # Populate with test data
+    log_info "Populating with test data..."
+    if [ -f "scripts/populate_test_data.py" ]; then
+        python3 scripts/populate_test_data.py 2>/dev/null || log_warn "Could not populate test data"
+    fi
+    
     if [ "$RUN_TESTS_AFTER_DEPLOY" = "true" ]; then
         log_info "Running test query..."
         python3 src/cloud_shell_rag.py query "What are the maintenance procedures?"
@@ -479,6 +485,12 @@ EOF
         log_success "✓ BigQuery Enhanced RAG deployed successfully"
     fi
     
+    # Populate with test data if no documents exist
+    log_info "Checking if test data population is needed..."
+    if [ -f "scripts/populate_test_data.py" ]; then
+        python3 scripts/populate_test_data.py 2>/dev/null || log_warn "Could not populate test data"
+    fi
+    
     if [ "$RUN_TESTS_AFTER_DEPLOY" = "true" ]; then
         log_info "Running test query..."
         python3 src/bigquery_rag_enhanced.py query "What are the maintenance procedures?"
@@ -491,12 +503,19 @@ EOF
 deploy_rag_engine() {
     log_section "Deploying RAG Engine"
     
-    # Check region support
+    # Check region support and capacity limitations
     SUPPORTED_REGIONS=("us-central1" "us-east4" "europe-west3" "europe-west4")
+    CAPACITY_LIMITED_REGIONS=("us-central1")  # Regions with allowlist requirements
+    
     if [[ ! " ${SUPPORTED_REGIONS[@]} " =~ " ${GOOGLE_CLOUD_REGION} " ]]; then
         log_warn "Region $GOOGLE_CLOUD_REGION not supported for RAG Engine"
-        log_info "Switching to us-central1"
-        GOOGLE_CLOUD_REGION="us-central1"
+        log_info "Switching to us-east4 (better capacity availability)"
+        GOOGLE_CLOUD_REGION="us-east4"
+    elif [[ " ${CAPACITY_LIMITED_REGIONS[@]} " =~ " ${GOOGLE_CLOUD_REGION} " ]]; then
+        log_warn "⚠️  Region $GOOGLE_CLOUD_REGION has capacity limitations for new projects"
+        log_info "RAG Engine in $GOOGLE_CLOUD_REGION is allowlist-based due to capacity"
+        log_info "Switching to us-east4 for better availability..."
+        GOOGLE_CLOUD_REGION="us-east4"
     fi
     
     # Try to grant permissions first
@@ -576,6 +595,21 @@ EOF
         log_success "✓ RAG Engine deployed successfully"
         echo "$DEPLOY_OUTPUT" | grep -E "success|created|uploaded" || true
     else
+        # Check for specific error types
+        if echo "$DEPLOY_OUTPUT" | grep -q "allowlisting based due to capacity limitation"; then
+            log_warn "⚠️  RAG Engine capacity limitation detected"
+            log_info "   This project requires allowlist access for RAG Engine in this region"
+            log_info "   Options:"
+            log_info "   1. Contact vertex-ai-rag-engine-support@google.com for allowlist access"
+            log_info "   2. Use a different region (us-east4, europe-west3, europe-west4)"
+            log_info "   3. Use BigQuery Enhanced instead (similar capabilities)"
+            log_info ""
+            log_info "📌 Falling back to BigQuery Enhanced (recommended)..."
+            RAG_DEPLOYMENT_MODE="bigquery_enhanced"
+            deploy_bigquery_enhanced
+            return
+        fi
+        
         log_warn "Main RAG Engine failed, trying simplified version..."
         if [ "$VERBOSE_LOGGING" = "true" ]; then
             echo "Error details: $DEPLOY_OUTPUT" | head -5
@@ -587,6 +621,15 @@ EOF
         if [ $SIMPLE_EXIT_CODE -eq 0 ]; then
             log_success "✓ Simple RAG Engine deployed successfully"
         else
+            # Check for capacity limitation in simple version too
+            if echo "$SIMPLE_OUTPUT" | grep -q "allowlisting based due to capacity limitation"; then
+                log_warn "⚠️  RAG Engine capacity limitation (simple version too)"
+                log_info "📌 Falling back to BigQuery Enhanced..."
+                RAG_DEPLOYMENT_MODE="bigquery_enhanced"
+                deploy_bigquery_enhanced
+                return
+            fi
+            
             log_warn "⚠️  RAG Engine deployment failed"
             if [ "$VERBOSE_LOGGING" = "true" ]; then
                 echo "Error details: $SIMPLE_OUTPUT" | head -5
