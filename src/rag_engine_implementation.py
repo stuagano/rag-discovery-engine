@@ -36,6 +36,9 @@ class RAGEngineImplementation:
         self.location = os.getenv("GOOGLE_CLOUD_REGION", "us-central1")
         self.bucket_name = os.getenv("GCS_BUCKET", f"{self.project_id}-rag-documents")
         
+        # Validate and fix region for Vertex AI
+        self.location = self._validate_vertex_region(self.location)
+        
         # Initialize Vertex AI
         vertexai.init(project=self.project_id, location=self.location)
         
@@ -51,6 +54,51 @@ class RAGEngineImplementation:
         self.corpus_name = os.getenv("RAG_CORPUS_NAME", "manufacturing_docs")
         
         logger.info(f"✅ RAG Engine initialized for project: {self.project_id}")
+    
+    def _validate_vertex_region(self, region: str) -> str:
+        """Validate and correct region for Vertex AI compatibility"""
+        
+        # Supported Vertex AI regions (as of 2024)
+        vertex_regions = {
+            'us-central1', 'us-east1', 'us-east4', 'us-east5', 'us-east7', 
+            'us-south1', 'us-west1', 'us-west2', 'us-west3', 'us-west4',
+            'northamerica-northeast1', 'northamerica-northeast2',
+            'europe-central2', 'europe-north1', 'europe-southwest1',
+            'europe-west1', 'europe-west2', 'europe-west3', 'europe-west4',
+            'europe-west6', 'europe-west8', 'europe-west9', 'europe-west12',
+            'asia-east1', 'asia-east2', 'asia-northeast1', 'asia-northeast2',
+            'asia-northeast3', 'asia-south1', 'asia-south2', 'asia-southeast1',
+            'asia-southeast2', 'australia-southeast1', 'australia-southeast2',
+            'me-central1', 'me-central2', 'me-west1', 
+            'africa-south1', 'southamerica-east1', 'southamerica-west1'
+        }
+        
+        if region in vertex_regions:
+            logger.info(f"✓ Using Vertex AI region: {region}")
+            return region
+        else:
+            # Auto-correct to nearest supported region
+            region_mappings = {
+                'us-central': 'us-central1',
+                'us-east': 'us-east1', 
+                'us-west': 'us-west1',
+                'europe-west': 'europe-west1',
+                'asia-east': 'asia-east1',
+                'asia-southeast': 'asia-southeast1'
+            }
+            
+            # Try partial matches
+            for partial, full in region_mappings.items():
+                if region.startswith(partial):
+                    logger.warning(f"⚠️  Region '{region}' not supported by Vertex AI")
+                    logger.info(f"✓ Auto-correcting to: {full}")
+                    return full
+            
+            # Default fallback
+            default_region = 'us-central1'
+            logger.warning(f"⚠️  Region '{region}' not supported by Vertex AI")
+            logger.info(f"✓ Using default region: {default_region}")
+            return default_region
     
     def create_or_get_corpus(self, 
                             display_name: str = None,

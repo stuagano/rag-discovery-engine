@@ -61,11 +61,25 @@ class GoogleCloudRAG:
                 raise ValueError("GOOGLE_CLOUD_PROJECT must be set or gcloud must be configured")
         
         print(f"🔧 Initializing Google Cloud RAG for project: {self.project_id}")
+    
+    def _validate_vertex_region(self, region: str) -> str:
+        """Validate and correct region for Vertex AI compatibility"""
+        vertex_regions = {
+            'us-central1', 'us-east1', 'us-east4', 'us-west1', 'us-west2',
+            'europe-west1', 'europe-west2', 'europe-west3', 'europe-west4',
+            'asia-east1', 'asia-northeast1', 'asia-southeast1'
+        }
+        if region in vertex_regions:
+            return region
+        else:
+            print(f"⚠️ Region '{region}' not supported by Vertex AI, using us-central1")
+            return 'us-central1'
         
         # Initialize clients
         self.bq_client = bigquery.Client(project=self.project_id)
         
         # Initialize Vertex AI
+        self.region = self._validate_vertex_region(self.region)
         vertexai.init(project=self.project_id, location=self.region)
         
         # Vertex AI Embedding Model

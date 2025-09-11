@@ -159,10 +159,18 @@ configure_interactively() {
         log_warn "Could not verify project $GOOGLE_CLOUD_PROJECT - continuing anyway"
     fi
     
-    # 2. Region
+    # 2. Region (validate for Vertex AI compatibility)
     if [ -z "$GOOGLE_CLOUD_REGION" ]; then
         GOOGLE_CLOUD_REGION="$DEFAULT_REGION"
     fi
+    
+    echo -e "\n${CYAN}Recommended regions for Vertex AI:${NC}"
+    echo "  • us-central1 (Iowa - Recommended)"
+    echo "  • us-east1 (South Carolina)"
+    echo "  • europe-west1 (Belgium)"
+    echo "  • asia-east1 (Taiwan)"
+    echo -e "${YELLOW}Note: Some regions don't support all Vertex AI models${NC}"
+    
     prompt_with_default "Google Cloud Region" "${GOOGLE_CLOUD_REGION:-us-central1}" GOOGLE_CLOUD_REGION
     
     # 3. Deployment Mode

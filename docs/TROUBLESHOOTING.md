@@ -109,6 +109,32 @@ gcloud projects get-iam-policy YOUR-PROJECT-ID
 
 ---
 
+### ❌ Error: Unsupported region for Vertex AI
+
+**Problem**: Your region is not supported by Vertex AI.
+
+**Error message**: `ValueError: Unsupported region for Vertex AI`
+
+**Solution**:
+```bash
+# Edit .env and use a supported region:
+GOOGLE_CLOUD_REGION=us-central1  # Recommended
+# or
+GOOGLE_CLOUD_REGION=us-east1
+# or 
+GOOGLE_CLOUD_REGION=europe-west1
+```
+
+**Supported Vertex AI regions**:
+- **US**: us-central1, us-east1, us-east4, us-west1, us-west2, us-west3, us-west4
+- **Europe**: europe-west1, europe-west2, europe-west3, europe-west4, europe-west6
+- **Asia**: asia-east1, asia-northeast1, asia-southeast1, asia-south1
+- **Other**: australia-southeast1, northamerica-northeast1
+
+**Note**: The BigQuery RAG Enhanced implementation now automatically corrects unsupported regions to us-central1.
+
+---
+
 ### ❌ Error: Model not found (gemini-2.5-flash or gemini-embedding-001)
 
 **Problem**: The specified AI models are not available in your region.
