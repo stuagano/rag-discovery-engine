@@ -120,27 +120,8 @@ class RAGEngineImplementation:
             # Create new corpus if not found
             logger.info(f"Creating new RAG corpus: {display_name}")
             
-            # Configure corpus with advanced settings
-            corpus_config = rag.RagCorpus(
-                display_name=display_name,
-                description=description,
-                # Configure embedding model
-                embedding_model_config=rag.EmbeddingModelConfig(
-                    publisher_model="publishers/google/models/gemini-embedding-001"
-                ),
-                # Configure vector database (using managed Spanner)
-                vector_db_config=rag.VectorDbConfig(
-                    rag_managed_db=rag.RagManagedDb()  # Uses Spanner internally
-                    # Alternative: Use Vertex AI Vector Search
-                    # vertex_ai_search=rag.VertexAiSearch(
-                    #     index_endpoint="projects/.../indexEndpoints/..."
-                    # )
-                    # Or use external vector DB
-                    # pinecone=rag.Pinecone(...)
-                    # weaviate=rag.Weaviate(...)
-                ),
-            )
-            
+            # Create corpus with simplified API (vector DB is managed automatically)
+            # The latest API version handles vector database configuration internally
             self.corpus = rag.create_corpus(
                 display_name=display_name,
                 description=description
@@ -215,40 +196,30 @@ class RAGEngineImplementation:
             self.create_or_get_corpus()
         
         try:
-            import_config = rag.ImportRagFilesConfig(
-                # Chunking configuration
-                chunk_size=chunk_size,
-                chunk_overlap=chunk_overlap,
-                
-                # Parsing configuration
-                rag_file_parsing_config=rag.RagFileParsingConfig(
-                    use_advanced_pdf_parsing=True if parse_mode == "layout" else False,
-                    # Options: "default", "layout_parser", "llm_parser"
-                    parser_type=parse_mode
-                ),
-                
-                # Transformation configuration (optional)
-                # rag_file_transformation_config=rag.RagFileTransformationConfig(
-                #     use_summarization=True,
-                #     summarization_model="gemini-2.5-flash"
-                # )
-            )
+            # Create import configuration with simplified API
+            # The latest version uses simpler configuration
+            import_config = {
+                "chunk_size": chunk_size,
+                "chunk_overlap": chunk_overlap,
+            }
             
             if source_uri:
                 # Import from GCS bucket/folder
                 logger.info(f"Importing documents from: {source_uri}")
                 response = rag.import_files(
-                    corpus_name=self.corpus.name,
-                    gcs_source=rag.GcsSource(uris=[source_uri]),
-                    import_config=import_config
+                    corpus=self.corpus.name,
+                    source=[source_uri],
+                    chunk_size=chunk_size,
+                    chunk_overlap=chunk_overlap
                 )
             elif file_paths:
                 # Import specific files
                 logger.info(f"Importing {len(file_paths)} files")
                 response = rag.import_files(
-                    corpus_name=self.corpus.name,
-                    gcs_source=rag.GcsSource(uris=file_paths),
-                    import_config=import_config
+                    corpus=self.corpus.name,
+                    source=file_paths,
+                    chunk_size=chunk_size,
+                    chunk_overlap=chunk_overlap
                 )
             else:
                 raise ValueError("Either source_uri or file_paths must be provided")
@@ -283,24 +254,12 @@ class RAGEngineImplementation:
             raise ValueError("No corpus available. Create or load a corpus first.")
         
         try:
-            # Build retrieval query
-            retrieval_query = rag.RagQuery(
-                text=query,
-                similarity_top_k=similarity_top_k,
-                vector_distance_threshold=vector_distance_threshold
-            )
-            
-            # Add metadata filtering if provided
-            if filter_metadata:
-                # Example: {"facility": "FAB-1", "document_type": "maintenance"}
-                retrieval_query.rag_retrieval_config = rag.RagRetrievalConfig(
-                    filter=self._build_metadata_filter(filter_metadata)
-                )
-            
-            # Retrieve contexts
+            # Retrieve contexts using simplified API
             response = rag.retrieve(
-                corpus_name=self.corpus.name,
-                query=retrieval_query
+                corpus=self.corpus.name,
+                query=query,
+                similarity_top_k=similarity_top_k,
+                distance_threshold=vector_distance_threshold
             )
             
             # Format results
@@ -329,13 +288,11 @@ class RAGEngineImplementation:
         
         try:
             if use_corpus and self.corpus:
-                # Use RAG Engine's built-in generation
+                # Use RAG Engine's built-in generation with simplified API
                 response = rag.generate_answer(
-                    corpus_name=self.corpus.name,
+                    corpus=self.corpus.name,
                     query=query,
-                    answer_style="COMPREHENSIVE",  # Options: ABSTRACTIVE, EXTRACTIVE, COMPREHENSIVE
-                    temperature=temperature,
-                    model_name=self.generation_model_name
+                    temperature=temperature
                 )
                 
                 return {
@@ -447,7 +404,7 @@ Answer:"""
             raise ValueError("No corpus available.")
         
         try:
-            files = rag.list_files(corpus_name=self.corpus.name)
+            files = rag.list_files(corpus=self.corpus.name)
             
             file_list = []
             for file in files:
@@ -470,7 +427,7 @@ Answer:"""
         """Delete a file from the corpus"""
         
         try:
-            rag.delete_file(file_name=file_name)
+            rag.delete_file(file=file_name)
             logger.info(f"✅ Deleted file: {file_name}")
             return True
         except Exception as e:
@@ -539,7 +496,7 @@ Answer:"""
             return False
         
         try:
-            rag.delete_corpus(name=self.corpus.name)
+            rag.delete_corpus(corpus=self.corpus.name)
             logger.info(f"✅ Deleted corpus: {self.corpus.name}")
             self.corpus = None
             return True

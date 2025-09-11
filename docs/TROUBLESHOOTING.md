@@ -308,6 +308,58 @@ print(result)
 
 ---
 
+### ❌ Error: "Permission 'aiplatform.ragCorpora.list' denied"
+
+**Problem**: RAG Engine deployment fails with permission denied error.
+
+**Cause**: The Vertex AI RAG Engine requires special IAM permissions that are not granted by default.
+
+**Solutions**:
+
+#### Option 1: Automatic Fallback (Built-in)
+The deployment script automatically detects this and falls back to BigQuery Enhanced, which provides similar capabilities without special permissions.
+
+#### Option 2: Grant RAG Engine Permissions
+```bash
+# Grant Vertex AI User role to enable RAG Engine
+gcloud projects add-iam-policy-binding YOUR-PROJECT-ID \
+  --member=user:YOUR-EMAIL@domain.com \
+  --role=roles/aiplatform.user
+
+# Wait a few minutes for permissions to propagate
+sleep 120
+
+# Then retry deployment
+./deploy_unified.sh
+```
+
+#### Option 3: Use BigQuery Enhanced Instead
+```bash
+# Edit .env to use BigQuery Enhanced
+RAG_DEPLOYMENT_MODE=bigquery_enhanced
+
+# Deploy
+./deploy_unified.sh
+```
+
+**Note**: BigQuery Enhanced provides most RAG Engine features (semantic search, reranking, hybrid search) without requiring special permissions.
+
+---
+
+### ❌ Error: "module 'vertexai.preview.rag' has no attribute 'VectorDbConfig'"
+
+**Problem**: RAG Engine API has changed and removed certain configuration classes.
+
+**Cause**: The Vertex AI RAG API has been simplified and some classes like `VectorDbConfig`, `EmbeddingModelConfig`, and `RagManagedDb` have been deprecated.
+
+**Solution**: The codebase includes both updated implementations that handle the new API:
+- `src/rag_engine_implementation.py` - Updated to use simplified API
+- `src/rag_engine_simple.py` - Minimal implementation with basic API calls
+
+The deployment script automatically tries both and falls back to BigQuery if neither works.
+
+---
+
 ### 🆘 Getting Help
 
 If you're still having issues:

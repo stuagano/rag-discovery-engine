@@ -397,6 +397,52 @@ deploy_rag_engine() {
         GOOGLE_CLOUD_REGION="us-central1"
     fi
     
+    # Check if RAG Engine permissions are available
+    log_info "Checking RAG Engine permissions..."
+    
+    # Test RAG Engine access
+    RAG_ENGINE_TEST=$(python3 -c "
+import sys
+try:
+    from vertexai.preview import rag
+    import vertexai
+    vertexai.init(project='$GOOGLE_CLOUD_PROJECT', location='$GOOGLE_CLOUD_REGION')
+    # Try to list corpora (will fail if no permissions)
+    corpora = rag.list_corpora()
+    print('SUCCESS')
+except PermissionError as e:
+    print('PERMISSION_DENIED')
+except Exception as e:
+    if 'Permission' in str(e) or 'denied' in str(e):
+        print('PERMISSION_DENIED')
+    else:
+        print('ERROR')
+" 2>&1 | tail -1)
+    
+    if [[ "$RAG_ENGINE_TEST" == "PERMISSION_DENIED" ]]; then
+        log_warn "⚠️  RAG Engine permissions not available"
+        log_warn "   Required role: 'Vertex AI User' (roles/aiplatform.user)"
+        log_warn "   To enable RAG Engine, run:"
+        log_warn "   gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT \\"
+        log_warn "     --member=user:YOUR_EMAIL --role=roles/aiplatform.user"
+        log_warn ""
+        log_info "📌 Falling back to BigQuery Enhanced implementation..."
+        log_info "   (BigQuery Enhanced provides similar capabilities without special permissions)"
+        
+        # Switch to BigQuery Enhanced
+        RAG_DEPLOYMENT_MODE="bigquery_enhanced"
+        deploy_bigquery_enhanced
+        return
+    elif [[ "$RAG_ENGINE_TEST" != "SUCCESS" ]]; then
+        log_warn "⚠️  RAG Engine check failed"
+        log_info "📌 Falling back to BigQuery Enhanced implementation..."
+        RAG_DEPLOYMENT_MODE="bigquery_enhanced"
+        deploy_bigquery_enhanced
+        return
+    fi
+    
+    log_success "✓ RAG Engine permissions verified"
+    
     # Create/update .env for RAG Engine
     cat > .env << EOF
 GOOGLE_CLOUD_PROJECT=$GOOGLE_CLOUD_PROJECT
@@ -414,7 +460,17 @@ EOF
     log_info "Deploying RAG Engine..."
     log_info "Parse mode: $RAG_ENGINE_PARSE_MODE"
     
-    python3 src/rag_engine_implementation.py deploy
+    # Try the main RAG Engine implementation
+    if ! python3 src/rag_engine_implementation.py deploy 2>/dev/null; then
+        log_warn "Main RAG Engine failed, trying simplified version..."
+        if ! python3 src/rag_engine_simple.py deploy 2>/dev/null; then
+            log_warn "⚠️  RAG Engine deployment failed"
+            log_info "📌 Falling back to BigQuery Enhanced..."
+            RAG_DEPLOYMENT_MODE="bigquery_enhanced"
+            deploy_bigquery_enhanced
+            return
+        fi
+    fi
     
     if [ "$RUN_TESTS_AFTER_DEPLOY" = "true" ]; then
         log_info "Running test query..."
