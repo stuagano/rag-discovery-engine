@@ -10,6 +10,7 @@ vertexai>=1.38.0
 # Data Processing
 numpy>=1.24.0
 pandas>=2.0.0
+pyarrow>=12.0.0
 
 # PDF Processing
 PyPDF2>=3.0.1

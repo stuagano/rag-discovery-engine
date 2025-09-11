@@ -2,6 +2,45 @@
 
 ## Common Issues and Solutions
 
+### ❌ Error: "This method requires pyarrow to be installed"
+
+**Problem**: BigQuery DataFrame upload fails due to missing pyarrow dependency.
+
+**Solutions**:
+
+#### Option 1: Automatic Installation (Recommended)
+```bash
+# Run the dependency installer
+./scripts/install_dependencies.sh
+
+# Then redeploy
+./deploy_unified.sh
+```
+
+#### Option 2: Manual Installation
+```bash
+# If in virtual environment
+pip install pyarrow>=12.0.0
+
+# If system install
+pip3 install --user pyarrow>=12.0.0
+
+# Or install all requirements
+pip install -r requirements.txt
+```
+
+---
+
+### ❌ Error: Dataset name duplication (rag_unified_basic_enhanced_basic)
+
+**Problem**: Dataset names get duplicated when running deployment multiple times.
+
+**Cause**: Previous versions of the deployment script would append `_basic` or `_enhanced` multiple times.
+
+**Solution**: This has been fixed in the latest version. The script now automatically removes previous suffixes before adding new ones.
+
+---
+
 ### ❌ Error: "Unrecognized name: keywords" in BigQuery
 
 **Problem**: You're getting a BigQuery error about an unrecognized column name `keywords`.

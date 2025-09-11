@@ -111,6 +111,29 @@ check_prerequisites() {
     if ! command -v git &> /dev/null; then
         log_warn "git not found, some features may not work"
     fi
+    
+    # Check for pyarrow (most common missing dependency)
+    if ! python3 -c "import pyarrow" &> /dev/null; then
+        log_warn "pyarrow not found - required for BigQuery DataFrame operations"
+        
+        if [ -f "scripts/install_dependencies.sh" ]; then
+            echo -e "${YELLOW}Would you like to install missing dependencies automatically?${NC}"
+            echo -n "Install dependencies? [Y/n]: "
+            read -r response
+            
+            if [[ "$response" != "n" ]] && [[ "$response" != "N" ]]; then
+                log_info "Installing dependencies..."
+                chmod +x scripts/install_dependencies.sh 2>/dev/null || true
+                ./scripts/install_dependencies.sh
+            else
+                log_warn "Continuing without installing dependencies - deployment may fail"
+            fi
+        else
+            log_error "Missing dependencies detected. Please install manually:"
+            echo "  pip install pyarrow pandas>=2.0.0"
+            echo "Or run: pip install -r requirements.txt"
+        fi
+    fi
 }
 
 load_env() {
@@ -297,11 +320,14 @@ setup_python_env() {
 deploy_bigquery_basic() {
     log_section "Deploying BigQuery RAG (Basic)"
     
+    # Use base dataset name and append suffix
+    BASE_DATASET=$(echo "$BIGQUERY_DATASET" | sed 's/_basic$//g' | sed 's/_enhanced$//g')
+    
     # Create/update .env for basic implementation
     cat > .env << EOF
 GOOGLE_CLOUD_PROJECT=$GOOGLE_CLOUD_PROJECT
 GOOGLE_CLOUD_REGION=$GOOGLE_CLOUD_REGION
-BIGQUERY_DATASET=${BIGQUERY_DATASET}_basic
+BIGQUERY_DATASET=${BASE_DATASET}_basic
 VERTEX_EMBEDDING_MODEL=$VERTEX_EMBEDDING_MODEL
 VERTEX_GENERATION_MODEL=$VERTEX_GENERATION_MODEL
 NUM_TEST_DOCS=$NUM_TEST_DOCS
@@ -322,11 +348,14 @@ EOF
 deploy_bigquery_enhanced() {
     log_section "Deploying BigQuery RAG (Enhanced)"
     
+    # Use base dataset name and append suffix
+    BASE_DATASET=$(echo "$BIGQUERY_DATASET" | sed 's/_basic$//g' | sed 's/_enhanced$//g')
+    
     # Create/update .env for enhanced implementation
     cat > .env << EOF
 GOOGLE_CLOUD_PROJECT=$GOOGLE_CLOUD_PROJECT
 GOOGLE_CLOUD_REGION=$GOOGLE_CLOUD_REGION
-BIGQUERY_DATASET=${BIGQUERY_DATASET}_enhanced
+BIGQUERY_DATASET=${BASE_DATASET}_enhanced
 VERTEX_EMBEDDING_MODEL=$VERTEX_EMBEDDING_MODEL
 VERTEX_GENERATION_MODEL=$VERTEX_GENERATION_MODEL
 NUM_TEST_DOCS=$NUM_TEST_DOCS
