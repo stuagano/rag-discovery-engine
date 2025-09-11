@@ -116,6 +116,22 @@ load_env() {
         ENV_FILE=".env.unified"
         log_info "Using .env.unified as configuration"
     else
+        log_warn "No .env file found"
+        
+        # Offer to run interactive setup
+        if [ -f deploy_unified_interactive.sh ]; then
+            echo -e "${YELLOW}Would you like to run the interactive setup wizard?${NC}"
+            echo -e "${CYAN}This will guide you through all configuration options.${NC}"
+            echo -n -e "Run interactive setup? [Y/n]: "
+            read -r response
+            
+            if [[ "$response" != "n" ]] && [[ "$response" != "N" ]]; then
+                log_info "Launching interactive setup..."
+                chmod +x deploy_unified_interactive.sh 2>/dev/null || true
+                exec ./deploy_unified_interactive.sh
+            fi
+        fi
+        
         log_error "No .env file found"
         echo "Creating .env from template..."
         
