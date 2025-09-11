@@ -23,10 +23,23 @@ import vertexai
 from vertexai.language_models import TextEmbeddingModel
 from vertexai.generative_models import GenerativeModel
 
-# Document processing
-import PyPDF2
-import pdfplumber
+# Document processing - optional imports
 from typing import Union
+
+try:
+    import PyPDF2
+    PYPDF2_AVAILABLE = True
+except ImportError:
+    PYPDF2_AVAILABLE = False
+
+try:
+    import pdfplumber
+    PDFPLUMBER_AVAILABLE = True
+except ImportError:
+    PDFPLUMBER_AVAILABLE = False
+
+if not PYPDF2_AVAILABLE and not PDFPLUMBER_AVAILABLE:
+    logging.warning("PDF libraries not installed - PDF parsing disabled")
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

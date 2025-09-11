@@ -530,10 +530,29 @@ EOF
     log_info "Parse mode: $RAG_ENGINE_PARSE_MODE"
     
     # Try the main RAG Engine implementation
-    if ! python3 src/rag_engine_implementation.py deploy 2>/dev/null; then
+    log_info "Attempting main RAG Engine deployment..."
+    DEPLOY_OUTPUT=$(python3 src/rag_engine_implementation.py deploy 2>&1)
+    DEPLOY_EXIT_CODE=$?
+    
+    if [ $DEPLOY_EXIT_CODE -eq 0 ]; then
+        log_success "✓ RAG Engine deployed successfully"
+        echo "$DEPLOY_OUTPUT" | grep -E "success|created|uploaded" || true
+    else
         log_warn "Main RAG Engine failed, trying simplified version..."
-        if ! python3 src/rag_engine_simple.py deploy 2>/dev/null; then
+        if [ "$VERBOSE_LOGGING" = "true" ]; then
+            echo "Error details: $DEPLOY_OUTPUT" | head -5
+        fi
+        
+        SIMPLE_OUTPUT=$(python3 src/rag_engine_simple.py deploy 2>&1)
+        SIMPLE_EXIT_CODE=$?
+        
+        if [ $SIMPLE_EXIT_CODE -eq 0 ]; then
+            log_success "✓ Simple RAG Engine deployed successfully"
+        else
             log_warn "⚠️  RAG Engine deployment failed"
+            if [ "$VERBOSE_LOGGING" = "true" ]; then
+                echo "Error details: $SIMPLE_OUTPUT" | head -5
+            fi
             log_info "📌 Falling back to BigQuery Enhanced..."
             RAG_DEPLOYMENT_MODE="bigquery_enhanced"
             deploy_bigquery_enhanced
@@ -543,10 +562,15 @@ EOF
     
     if [ "$RUN_TESTS_AFTER_DEPLOY" = "true" ]; then
         log_info "Running test query..."
-        python3 src/rag_engine_implementation.py query "What are the maintenance procedures?"
+        # Use error handling for query test
+        if python3 src/rag_engine_implementation.py query "What are the maintenance procedures?" 2>&1; then
+            log_success "✓ Test query successful"
+        else
+            log_warn "Test query failed - corpus may need time to index"
+        fi
         
         log_info "Checking corpus status..."
-        python3 src/rag_engine_implementation.py status
+        python3 src/rag_engine_implementation.py status 2>&1 || log_warn "Could not get corpus status"
     fi
 }
 

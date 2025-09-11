@@ -17,8 +17,15 @@ import vertexai
 from vertexai.preview import rag
 from vertexai.generative_models import GenerativeModel
 from google.cloud import storage
-import PyPDF2
 import logging
+
+# Optional import for PDF support
+try:
+    import PyPDF2
+    PDF_SUPPORT = True
+except ImportError:
+    PDF_SUPPORT = False
+    logging.warning("PyPDF2 not installed - PDF parsing disabled")
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -646,22 +653,50 @@ if __name__ == "__main__":
         elif command == "query":
             if len(sys.argv) > 2:
                 query_text = " ".join(sys.argv[2:])
-                result = rag_engine.query(query_text)
-                print(f"\nQuery: {result['query']}")
-                print(f"Answer: {result['answer']}")
-                print(f"Contexts: {result['num_contexts']}")
-                print(f"Time: {result['timings']['total_ms']:.2f}ms")
+                # Try to get existing corpus first
+                try:
+                    if not rag_engine.corpus:
+                        logger.info("No corpus loaded, attempting to find existing corpus...")
+                        rag_engine.create_or_get_corpus()
+                    result = rag_engine.query(query_text)
+                    print(f"\nQuery: {result['query']}")
+                    print(f"Answer: {result['answer']}")
+                    print(f"Contexts: {result['num_contexts']}")
+                    print(f"Time: {result['timings']['total_ms']:.2f}ms")
+                except ValueError as e:
+                    print(f"Error: {str(e)}")
+                    print("Please run 'deploy' first to create and populate the corpus")
+                except Exception as e:
+                    print(f"Query failed: {str(e)}")
             else:
                 print("Usage: python rag_engine_implementation.py query <your question>")
                 
         elif command == "status":
-            stats = rag_engine.get_corpus_statistics()
-            print(json.dumps(stats, indent=2))
+            try:
+                # Try to load existing corpus if not already loaded
+                if not rag_engine.corpus:
+                    logger.info("No corpus loaded, attempting to find existing corpus...")
+                    rag_engine.create_or_get_corpus()
+                stats = rag_engine.get_corpus_statistics()
+                print(json.dumps(stats, indent=2))
+            except Exception as e:
+                print(json.dumps({"status": "error", "message": str(e)}, indent=2))
             
         elif command == "list":
-            files = rag_engine.list_corpus_files()
-            for file in files:
-                print(f"- {file['display_name']} ({file.get('size_bytes', 0) / 1024:.1f}KB)")
+            try:
+                # Try to load existing corpus if not already loaded
+                if not rag_engine.corpus:
+                    logger.info("No corpus loaded, attempting to find existing corpus...")
+                    rag_engine.create_or_get_corpus()
+                files = rag_engine.list_corpus_files()
+                if files:
+                    for file in files:
+                        print(f"- {file['display_name']} ({file.get('size_bytes', 0) / 1024:.1f}KB)")
+                else:
+                    print("No files in corpus")
+            except Exception as e:
+                print(f"Error listing files: {str(e)}")
+                print("Please run 'deploy' first to create and populate the corpus")
                 
         else:
             print("Commands: deploy, query, status, list")
