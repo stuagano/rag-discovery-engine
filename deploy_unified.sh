@@ -42,8 +42,48 @@ log_section() {
     echo -e "\n${BLUE}=== $1 ===${NC}"
 }
 
+detect_environment() {
+    log_section "Detecting Environment"
+    
+    # Check if running in Cloud Shell
+    if [ "$CLOUD_SHELL" = "true" ]; then
+        log_info "✅ Running in Google Cloud Shell"
+        log_info "   Project: $GOOGLE_CLOUD_PROJECT"
+        log_info "   User: $(gcloud config get-value account)"
+        
+        # Auto-create .env if not exists in Cloud Shell
+        if [ ! -f .env ] && [ ! -f .env.unified ]; then
+            log_info "Creating .env with Cloud Shell defaults..."
+            cat > .env << EOF
+GOOGLE_CLOUD_PROJECT=$GOOGLE_CLOUD_PROJECT
+GOOGLE_CLOUD_REGION=us-central1
+RAG_DEPLOYMENT_MODE=bigquery_enhanced
+BIGQUERY_DATASET=rag_unified
+BIGQUERY_LOCATION=US
+NUM_TEST_DOCS=10
+CHUNK_SIZE=1000
+CHUNK_OVERLAP=200
+ENABLE_HYBRID_SEARCH=true
+ENABLE_CACHING=true
+ENABLE_RERANKING=true
+AUTO_CREATE_RESOURCES=true
+AUTO_ENABLE_APIS=true
+VERBOSE_LOGGING=true
+RUN_TESTS_AFTER_DEPLOY=true
+USE_PUBLIC_DATA=false
+EOF
+            log_info "✅ Created .env with project: $GOOGLE_CLOUD_PROJECT"
+        fi
+    else
+        log_info "Running in local environment"
+    fi
+}
+
 check_prerequisites() {
     log_section "Checking Prerequisites"
+    
+    # Detect environment first
+    detect_environment
     
     # Check Python
     if ! command -v python3 &> /dev/null; then
