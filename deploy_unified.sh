@@ -48,14 +48,21 @@ detect_environment() {
     # Check if running in Cloud Shell
     if [ "$CLOUD_SHELL" = "true" ]; then
         log_info "✅ Running in Google Cloud Shell"
-        log_info "   Project: $GOOGLE_CLOUD_PROJECT"
+        
+        # Get the actual project from gcloud config
+        DETECTED_PROJECT=$(gcloud config get-value project 2>/dev/null)
+        if [ -z "$DETECTED_PROJECT" ] || [ "$DETECTED_PROJECT" = "None" ]; then
+            DETECTED_PROJECT="$GOOGLE_CLOUD_PROJECT"
+        fi
+        
+        log_info "   Project: $DETECTED_PROJECT"
         log_info "   User: $(gcloud config get-value account)"
         
         # Auto-create .env if not exists in Cloud Shell
         if [ ! -f .env ] && [ ! -f .env.unified ]; then
             log_info "Creating .env with Cloud Shell defaults..."
             cat > .env << EOF
-GOOGLE_CLOUD_PROJECT=$GOOGLE_CLOUD_PROJECT
+GOOGLE_CLOUD_PROJECT=${DETECTED_PROJECT:-$GOOGLE_CLOUD_PROJECT}
 GOOGLE_CLOUD_REGION=us-central1
 RAG_DEPLOYMENT_MODE=bigquery_enhanced
 BIGQUERY_DATASET=rag_unified
@@ -72,7 +79,7 @@ VERBOSE_LOGGING=true
 RUN_TESTS_AFTER_DEPLOY=true
 USE_PUBLIC_DATA=false
 EOF
-            log_info "✅ Created .env with project: $GOOGLE_CLOUD_PROJECT"
+            log_info "✅ Created .env with project: ${DETECTED_PROJECT:-$GOOGLE_CLOUD_PROJECT}"
         fi
     else
         log_info "Running in local environment"
@@ -167,9 +174,23 @@ EOF
     
     # Validate required variables
     if [ "$GOOGLE_CLOUD_PROJECT" = "your-project-id" ] || [ -z "$GOOGLE_CLOUD_PROJECT" ]; then
-        log_error "GOOGLE_CLOUD_PROJECT not set in .env"
-        echo "Please edit .env and set your Google Cloud project ID"
-        exit 1
+        # Try to get from gcloud config
+        DETECTED_PROJECT=$(gcloud config get-value project 2>/dev/null)
+        if [ -n "$DETECTED_PROJECT" ] && [ "$DETECTED_PROJECT" != "None" ]; then
+            log_warn "Using detected project: $DETECTED_PROJECT"
+            export GOOGLE_CLOUD_PROJECT="$DETECTED_PROJECT"
+            
+            # Update the .env file with the detected project
+            if [ -f "$ENV_FILE" ]; then
+                sed -i "s/GOOGLE_CLOUD_PROJECT=.*/GOOGLE_CLOUD_PROJECT=$DETECTED_PROJECT/" "$ENV_FILE"
+                log_info "Updated $ENV_FILE with detected project"
+            fi
+        else
+            log_error "GOOGLE_CLOUD_PROJECT not set in .env"
+            echo "Please edit .env and set your Google Cloud project ID"
+            echo "Or run: gcloud config set project YOUR-PROJECT-ID"
+            exit 1
+        fi
     fi
     
     log_info "Configuration loaded from $ENV_FILE"

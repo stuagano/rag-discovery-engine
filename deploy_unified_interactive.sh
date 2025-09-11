@@ -70,9 +70,24 @@ detect_environment() {
     if [ "$CLOUD_SHELL" = "true" ]; then
         log_info "✅ Running in Google Cloud Shell"
         IN_CLOUD_SHELL=true
-        DEFAULT_PROJECT="$GOOGLE_CLOUD_PROJECT"
+        
+        # Get actual project from gcloud config, not environment variable
+        DEFAULT_PROJECT=$(gcloud config get-value project 2>/dev/null)
+        if [ -z "$DEFAULT_PROJECT" ] || [ "$DEFAULT_PROJECT" = "None" ]; then
+            DEFAULT_PROJECT="$GOOGLE_CLOUD_PROJECT"
+        fi
+        
+        # If still no project or it's the placeholder, prompt user
+        if [ -z "$DEFAULT_PROJECT" ] || [ "$DEFAULT_PROJECT" = "your-project-id" ]; then
+            DEFAULT_PROJECT=""
+        fi
+        
         DEFAULT_REGION="us-central1"
-        log_info "   Detected project: $DEFAULT_PROJECT"
+        if [ -n "$DEFAULT_PROJECT" ]; then
+            log_info "   Detected project: $DEFAULT_PROJECT"
+        else
+            log_warn "   No project detected - will prompt for it"
+        fi
     else
         log_info "Running in local environment"
         IN_CLOUD_SHELL=false
@@ -81,7 +96,7 @@ detect_environment() {
         DEFAULT_PROJECT=$(gcloud config get-value project 2>/dev/null || echo "")
         DEFAULT_REGION="us-central1"
         
-        if [ -n "$DEFAULT_PROJECT" ]; then
+        if [ -n "$DEFAULT_PROJECT" ] && [ "$DEFAULT_PROJECT" != "None" ]; then
             log_info "   Detected project from gcloud: $DEFAULT_PROJECT"
         fi
     fi
@@ -125,14 +140,24 @@ configure_interactively() {
     echo -e "${YELLOW}Let's set up your RAG deployment. Press Enter to use defaults.${NC}\n"
     
     # 1. Google Cloud Project
-    if [ -z "$GOOGLE_CLOUD_PROJECT" ]; then
+    if [ -z "$GOOGLE_CLOUD_PROJECT" ] || [ "$GOOGLE_CLOUD_PROJECT" = "your-project-id" ]; then
         GOOGLE_CLOUD_PROJECT="$DEFAULT_PROJECT"
     fi
     
-    while [ -z "$GOOGLE_CLOUD_PROJECT" ]; do
+    # Keep prompting until we get a valid project ID
+    while [ -z "$GOOGLE_CLOUD_PROJECT" ] || [ "$GOOGLE_CLOUD_PROJECT" = "your-project-id" ]; do
         echo -e "${RED}Google Cloud Project is required!${NC}"
+        echo -e "${YELLOW}Tip: You can find your project ID with: gcloud projects list${NC}"
         prompt_with_default "Enter your Google Cloud Project ID" "" GOOGLE_CLOUD_PROJECT
     done
+    
+    # Verify the project exists and set it in gcloud
+    if gcloud projects describe "$GOOGLE_CLOUD_PROJECT" &>/dev/null; then
+        log_info "✅ Project verified: $GOOGLE_CLOUD_PROJECT"
+        gcloud config set project "$GOOGLE_CLOUD_PROJECT" 2>/dev/null
+    else
+        log_warn "Could not verify project $GOOGLE_CLOUD_PROJECT - continuing anyway"
+    fi
     
     # 2. Region
     if [ -z "$GOOGLE_CLOUD_REGION" ]; then

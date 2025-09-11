@@ -4,13 +4,37 @@ Deploy a production-ready RAG system using **100% Google Cloud services** (BigQu
 
 ## 🚀 Quick Start (Cloud Shell)
 
+### Option 1: Automatic Setup Wizard (Recommended)
 ```bash
-# 1. Clone repository
+# Clone repository
 git clone https://github.com/stuagano/rag-discovery-engine.git
 cd rag-discovery-engine
 
-# 2. One-command deployment
-./deploy.sh
+# Run the Cloud Shell setup wizard
+chmod +x scripts/cloud_shell_setup.sh
+./scripts/cloud_shell_setup.sh
+```
+
+The wizard will:
+- 🎯 Auto-detect or prompt for your GCP project
+- ⚡ Enable all required APIs
+- 🔧 Configure optimal settings
+- 🚀 Deploy your chosen RAG solution
+
+### Option 2: Interactive Configuration
+```bash
+# For full control over all settings
+./deploy_unified_interactive.sh
+```
+
+### Option 3: Manual Deployment
+```bash
+# Edit configuration first
+cp .env.example .env
+nano .env  # Set your project ID
+
+# Then deploy
+./deploy_unified.sh
 ```
 
 That's it! The script automatically:
