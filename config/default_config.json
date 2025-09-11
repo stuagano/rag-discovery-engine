@@ -1,0 +1,83 @@
+{
+  "dataset_acquisition": {
+    "sources": [
+      "ragbench",
+      "synthetic",
+      "scraped"
+    ],
+    "synthetic_count": 500,
+    "enable_quality_validation": true,
+    "quality_thresholds": {
+      "min_content_length": 100,
+      "min_quality_score": 0.7,
+      "min_technical_content_ratio": 0.6
+    }
+  },
+  "rag_pipeline": {
+    "dataset_id": "manufacturing_rag_production",
+    "embedding_model": "textembedding-gecko@003",
+    "chunk_size": 1000,
+    "chunk_overlap": 200,
+    "batch_size": 50,
+    "parallel_workers": 10,
+    "similarity_thresholds": {
+      "default": 0.7,
+      "safety_content": 0.8,
+      "quality_control": 0.75
+    }
+  },
+  "migration": {
+    "enable_assessment": true,
+    "migration_strategy": "auto",
+    "validation_enabled": true,
+    "backup_enabled": true,
+    "parallel_migrations": 3,
+    "checkpoint_frequency": 5
+  },
+  "benchmarking": {
+    "comprehensive_suite": true,
+    "accuracy_tests": true,
+    "performance_tests": true,
+    "scalability_tests": true,
+    "domain_specific_tests": true,
+    "cost_analysis": true,
+    "test_iterations": {
+      "accuracy": 50,
+      "performance": 20,
+      "latency": 10
+    },
+    "performance_targets": {
+      "avg_latency_ms": 500,
+      "p95_latency_ms": 1000,
+      "f1_score": 0.85,
+      "precision": 0.8,
+      "recall": 0.8
+    }
+  },
+  "execution": {
+    "save_intermediate_results": true,
+    "continue_on_error": false,
+    "generate_report": true,
+    "log_level": "INFO",
+    "max_retries": 3,
+    "timeout_minutes": 180
+  },
+  "security": {
+    "enable_row_level_security": true,
+    "encrypt_sensitive_data": true,
+    "audit_logging": true,
+    "access_control": {
+      "default_facility_access": ["fab_01", "fab_02"],
+      "safety_content_restriction": true
+    }
+  },
+  "monitoring": {
+    "enable_performance_tracking": true,
+    "enable_cost_tracking": true,
+    "alert_thresholds": {
+      "query_latency_ms": 2000,
+      "error_rate": 0.05,
+      "cost_increase_percentage": 50
+    }
+  }
+}

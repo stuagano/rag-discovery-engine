@@ -1,28 +1,25 @@
-# BigQuery RAG Requirements - Cloud Shell Optimized
+# Google Cloud Core Requirements
 google-cloud-bigquery>=3.11.0
 google-cloud-aiplatform>=1.35.0
 google-cloud-storage>=2.10.0
 google-auth>=2.23.0
 
-# Embedding Options
-sentence-transformers>=2.2.2
-openai>=1.3.0
-transformers>=4.35.0
-
-# PDF Processing
-PyPDF2>=3.0.1
-pdfplumber>=0.9.0
+# Vertex AI specific
+vertexai>=1.38.0
 
 # Data Processing
 numpy>=1.24.0
 pandas>=2.0.0
 
+# PDF Processing
+PyPDF2>=3.0.1
+pdfplumber>=0.9.0
+
 # Environment & Config
 python-dotenv>=1.0.0
 
-# Text Processing
-langchain-text-splitters>=0.0.1
-
-# Utilities
+# Progress bars
 tqdm>=4.65.0
-click>=8.1.0
+
+# Additional for enhanced features
+typing-extensions>=4.0.0
