@@ -57,7 +57,7 @@ class HelloWorldRAG:
         """Generate embedding using Vertex AI"""
         from vertexai.language_models import TextEmbeddingModel
         
-        model = TextEmbeddingModel.from_pretrained("textembedding-gecko@003")
+        model = TextEmbeddingModel.from_pretrained("gemini-embedding-001")
         embeddings = model.get_embeddings([text])
         return embeddings[0].values
     

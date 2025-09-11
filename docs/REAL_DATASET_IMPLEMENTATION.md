@@ -316,7 +316,7 @@ class PDFIngestionPipeline:
         self.dataset_id = dataset_id
         self.client = bigquery.Client(project=project_id)
         self.storage_client = storage.Client(project=project_id)
-        self.embedding_model = TextEmbeddingModel.from_pretrained("textembedding-gecko@003")
+        self.embedding_model = TextEmbeddingModel.from_pretrained("gemini-embedding-001")
         
         # Text splitter configuration
         self.text_splitter = RecursiveCharacterTextSplitter(

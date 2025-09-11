@@ -259,7 +259,7 @@ class ManufacturingRAGPipeline:
         from vertexai.language_models import TextEmbeddingModel
         
         # Use latest Gecko model for technical content
-        return TextEmbeddingModel.from_pretrained("textembedding-gecko@003")
+        return TextEmbeddingModel.from_pretrained("gemini-embedding-001")
     
     def setup_optimized_schema(self):
         """Create optimized BigQuery schema for manufacturing RAG"""

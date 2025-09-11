@@ -78,7 +78,7 @@ class RAGEngineImplementation:
                 description=description,
                 # Configure embedding model
                 embedding_model_config=rag.EmbeddingModelConfig(
-                    publisher_model="publishers/google/models/textembedding-gecko@003"
+                    publisher_model="publishers/google/models/gemini-embedding-001"
                 ),
                 # Configure vector database (using managed Spanner)
                 vector_db_config=rag.VectorDbConfig(
@@ -476,7 +476,7 @@ Answer:"""
                 "created_time": self.corpus.create_time if hasattr(self.corpus, 'create_time') else None,
                 "updated_time": self.corpus.update_time if hasattr(self.corpus, 'update_time') else None,
                 "vector_db": "RagManagedDb (Spanner)",
-                "embedding_model": "textembedding-gecko@003"
+                "embedding_model": "gemini-embedding-001"
             }
             
         except Exception as e:

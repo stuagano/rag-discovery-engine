@@ -49,7 +49,7 @@ class OptimizedManufacturingRAG:
         from vertexai.language_models import TextEmbeddingModel
         
         # Use latest Gecko model optimized for technical content
-        return TextEmbeddingModel.from_pretrained("textembedding-gecko@003")
+        return TextEmbeddingModel.from_pretrained("gemini-embedding-001")
     
     def setup_optimized_schema(self) -> bigquery.Table:
         """Create optimized BigQuery schema with partitioning and clustering"""
@@ -340,7 +340,7 @@ class OptimizedManufacturingRAG:
                     'created_at': datetime.now(timezone.utc).isoformat(),
                     
                     # Performance optimization
-                    'embedding_model': 'textembedding-gecko@003',
+                    'embedding_model': 'gemini-embedding-001',
                     'chunk_hash': hashlib.md5(chunk['text'].encode()).hexdigest(),
                 }
                 

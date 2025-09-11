@@ -205,17 +205,17 @@ configure_interactively() {
     # 6. Model Selection
     echo -e "\n${CYAN}AI Model Configuration:${NC}"
     echo "Available embedding models:"
-    echo "  1) textembedding-gecko@003 (Recommended)"
-    echo "  2) textembedding-gecko@002"
-    echo "  3) textembedding-gecko-multilingual@001"
+    echo "  1) gemini-embedding-001 (Latest, Recommended)"
+    echo "  2) textembedding-gecko@003 (Legacy)"
+    echo "  3) textembedding-gecko@002 (Legacy)"
     
     prompt_with_default "Select embedding model [1-3]" "1" EMBED_CHOICE
     
     case "$EMBED_CHOICE" in
-        1) VERTEX_EMBEDDING_MODEL="textembedding-gecko@003" ;;
-        2) VERTEX_EMBEDDING_MODEL="textembedding-gecko@002" ;;
-        3) VERTEX_EMBEDDING_MODEL="textembedding-gecko-multilingual@001" ;;
-        *) VERTEX_EMBEDDING_MODEL="textembedding-gecko@003" ;;
+        1) VERTEX_EMBEDDING_MODEL="gemini-embedding-001" ;;
+        2) VERTEX_EMBEDDING_MODEL="textembedding-gecko@003" ;;
+        3) VERTEX_EMBEDDING_MODEL="textembedding-gecko@002" ;;
+        *) VERTEX_EMBEDDING_MODEL="gemini-embedding-001" ;;
     esac
     
     echo "Available generation models:"

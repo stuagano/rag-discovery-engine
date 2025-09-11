@@ -69,7 +69,7 @@ class GoogleCloudRAG:
         vertexai.init(project=self.project_id, location=self.region)
         
         # Vertex AI Embedding Model
-        self.embedding_model_name = os.getenv("VERTEX_EMBEDDING_MODEL", "textembedding-gecko@003")
+        self.embedding_model_name = os.getenv("VERTEX_EMBEDDING_MODEL", "gemini-embedding-001")
         self.embedding_model = TextEmbeddingModel.from_pretrained(self.embedding_model_name)
         self.embedding_dim = 768  # Gecko embedding dimension
         

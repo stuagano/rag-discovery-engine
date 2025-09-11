@@ -39,7 +39,7 @@ class DiscoveryToRAGMigrator:
         
         # Initialize Vertex AI
         vertexai.init(project=project_id, location=location)
-        self.embedding_model = TextEmbeddingModel.from_pretrained("textembedding-gecko@003")
+        self.embedding_model = TextEmbeddingModel.from_pretrained("gemini-embedding-001")
         
         # Migration tracking
         self.migration_stats = {
@@ -163,7 +163,7 @@ class DiscoveryToRAGMigrator:
         test_embedding = self.embedding_model.get_embeddings([sample_text])[0].values
         
         compatibility = {
-            "current_model": "textembedding-gecko@003",
+            "current_model": "gemini-embedding-001",
             "current_dimension": len(test_embedding),
             "discovery_dimension": len(discovery_embedding) if discovery_embedding else None,
             "compatible": False,
@@ -618,7 +618,7 @@ class DiscoveryToRAGMigrator:
             "configuration": {
                 "project_id": self.project_id,
                 "location": self.location,
-                "embedding_model": "textembedding-gecko@003"
+                "embedding_model": "gemini-embedding-001"
             },
             "cost_analysis": {
                 "embeddings_reused": self.migration_stats["embeddings_reused"],

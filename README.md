@@ -76,7 +76,7 @@ Google Cloud Project
 - Sub-second query performance
 
 ### **Vertex AI**
-- **Embedding Model**: `textembedding-gecko@003` (768 dimensions)
+- **Embedding Model**: `gemini-embedding-001` (768 dimensions)
 - **Generation Model**: `gemini-1.5-flash` for answer synthesis
 - Optional: `gemini-1.5-pro` for enhanced quality
 
@@ -139,7 +139,7 @@ GOOGLE_CLOUD_REGION=us-central1
 BIGQUERY_DATASET=rag_poc
 
 # Vertex AI Models
-VERTEX_EMBEDDING_MODEL=textembedding-gecko@003
+VERTEX_EMBEDDING_MODEL=gemini-embedding-001
 VERTEX_GENERATION_MODEL=gemini-1.5-flash
 
 # Document Processing

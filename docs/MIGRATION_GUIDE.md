@@ -149,7 +149,7 @@ print(f"✅ Created BigQuery table: {table}")
 |-------|------------|-------------|---------|
 | textembedding-gecko@001 | 768 | ✅ Yes | Direct reuse |
 | textembedding-gecko@002 | 768 | ✅ Yes | Direct reuse |
-| textembedding-gecko@003 | 768 | ✅ Yes | Direct reuse |
+| gemini-embedding-001 | 768 | ✅ Yes | Direct reuse |
 | text-embedding-ada-002 | 1536 | ❌ No | Regenerate |
 | Custom models | Varies | ⚠️ Check | Validate first |
 

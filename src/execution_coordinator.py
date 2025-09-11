@@ -62,7 +62,7 @@ class RAGDiscoveryEngineCoordinator:
             },
             'rag_pipeline': {
                 'dataset_id': 'manufacturing_rag_production',
-                'embedding_model': 'textembedding-gecko@003',
+                'embedding_model': 'gemini-embedding-001',
                 'chunk_size': 1000,
                 'chunk_overlap': 200,
                 'batch_size': 50

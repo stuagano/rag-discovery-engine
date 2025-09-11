@@ -24,7 +24,7 @@ Documents → Vertex AI Embeddings → BigQuery Tables → SQL Search → Gemini
 ```
 - **Vector Storage**: BigQuery tables with ARRAY<FLOAT64> columns
 - **Search**: Native SQL with custom cosine similarity function
-- **Embeddings**: Vertex AI textembedding-gecko@003
+- **Embeddings**: Vertex AI gemini-embedding-001
 - **Generation**: Vertex AI Gemini models
 
 #### **Vertex AI RAG Engine**

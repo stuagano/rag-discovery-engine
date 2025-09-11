@@ -35,7 +35,7 @@ This project delivers a comprehensive, production-ready implementation for migra
 ```python
 # Optimized for manufacturing content with enterprise features
 - Advanced chunking for technical documents
-- State-of-the-art embeddings (textembedding-gecko@003)
+- State-of-the-art embeddings (gemini-embedding-001)
 - Partitioned/clustered BigQuery tables
 - Manufacturing-specific metadata extraction
 - Real-time performance monitoring
@@ -207,7 +207,7 @@ rag-discovery-engine-swarm/
 {
   "rag_pipeline": {
     "dataset_id": "manufacturing_rag_production",
-    "embedding_model": "textembedding-gecko@003",
+    "embedding_model": "gemini-embedding-001",
     "chunk_size": 1000,
     "similarity_thresholds": {
       "default": 0.7,
