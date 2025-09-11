@@ -687,6 +687,55 @@ show_next_steps() {
         echo "• RAG Corpus: $RAG_CORPUS_NAME"
         echo "• GCS Bucket: ${GOOGLE_CLOUD_PROJECT}-${GCS_BUCKET_SUFFIX}"
     fi
+    
+    echo ""
+    echo -e "${CYAN}=== Smoke Test - Response Format Demo ===${NC}"
+    echo "Running response format demonstration..."
+    echo ""
+    
+    # Run the response format script as a smoke test
+    if [ -f "scripts/show_response_format.py" ]; then
+        python3 scripts/show_response_format.py | head -50
+        echo ""
+        echo -e "${GREEN}✓ Response format demo complete${NC}"
+        
+        # Run a quick live test if deployment was successful
+        echo ""
+        echo -e "${CYAN}=== Live Smoke Test ===${NC}"
+        echo "Testing deployed service with a sample query..."
+        echo ""
+        
+        SMOKE_TEST_QUERY="What are the maintenance procedures?"
+        
+        case "$RAG_DEPLOYMENT_MODE" in
+            bigquery_basic)
+                echo "Command: python3 src/cloud_shell_rag.py query \"$SMOKE_TEST_QUERY\""
+                echo "─────────────────────────────────────────"
+                python3 src/cloud_shell_rag.py query "$SMOKE_TEST_QUERY" 2>&1 | head -15 || echo "⚠️ Live test failed - check deployment"
+                ;;
+            bigquery_enhanced)
+                echo "Command: python3 src/bigquery_rag_enhanced.py query \"$SMOKE_TEST_QUERY\""
+                echo "─────────────────────────────────────────"
+                python3 src/bigquery_rag_enhanced.py query "$SMOKE_TEST_QUERY" 2>&1 | head -15 || echo "⚠️ Live test failed - check deployment"
+                ;;
+            rag_engine)
+                echo "Command: python3 src/rag_engine_implementation.py query \"$SMOKE_TEST_QUERY\""
+                echo "─────────────────────────────────────────"
+                python3 src/rag_engine_implementation.py query "$SMOKE_TEST_QUERY" 2>&1 | head -15 || echo "⚠️ Live test failed - check deployment"
+                ;;
+            all)
+                echo "Multiple implementations deployed - run ./scripts/test_rag_responses.sh for comprehensive testing"
+                ;;
+        esac
+        
+        echo ""
+        echo -e "${GREEN}✓ Smoke test complete${NC}"
+        echo -e "${YELLOW}💡 For comprehensive testing with multiple queries, run:${NC}"
+        echo "   ./scripts/test_rag_responses.sh"
+    else
+        echo -e "${YELLOW}Response format demo not available${NC}"
+        echo "Create scripts/show_response_format.py for examples"
+    fi
 }
 
 # === Main Execution ===
