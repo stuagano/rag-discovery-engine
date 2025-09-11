@@ -34,6 +34,10 @@ log_warn() {
     echo -e "${YELLOW}[WARN]${NC} $1"
 }
 
+log_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
 log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
@@ -75,6 +79,7 @@ ENABLE_CACHING=true
 ENABLE_RERANKING=true
 AUTO_CREATE_RESOURCES=true
 AUTO_ENABLE_APIS=true
+AUTO_GRANT_PERMISSIONS=true
 VERBOSE_LOGGING=true
 RUN_TESTS_AFTER_DEPLOY=true
 USE_PUBLIC_DATA=false
@@ -182,6 +187,7 @@ ENABLE_CACHING=true
 ENABLE_RERANKING=true
 AUTO_CREATE_RESOURCES=true
 AUTO_ENABLE_APIS=true
+AUTO_GRANT_PERMISSIONS=true
 RUN_TESTS_AFTER_DEPLOY=true
 EOF
         
@@ -295,6 +301,64 @@ enable_apis() {
     done
 }
 
+grant_rag_engine_permissions() {
+    log_section "Granting RAG Engine Permissions"
+    
+    # Get current account (user or service account)
+    ACCOUNT=$(gcloud auth list --filter=status:ACTIVE --format="value(account)" 2>/dev/null | head -1)
+    
+    if [ -z "$ACCOUNT" ]; then
+        log_warn "Could not determine account for IAM permissions"
+        log_warn "To manually grant permissions, run:"
+        log_warn "  gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT \\"
+        log_warn "    --member=user:YOUR_EMAIL --role=roles/aiplatform.user"
+        return 1
+    fi
+    
+    # Determine if it's a service account or user account
+    if [[ "$ACCOUNT" == *"iam.gserviceaccount.com" ]]; then
+        MEMBER_TYPE="serviceAccount"
+        log_info "Granting Vertex AI permissions to service account: $ACCOUNT"
+    else
+        MEMBER_TYPE="user"
+        log_info "Granting Vertex AI permissions to user: $ACCOUNT"
+    fi
+    
+    # Check if account already has the role
+    EXISTING_BINDING=$(gcloud projects get-iam-policy "$GOOGLE_CLOUD_PROJECT" \
+        --flatten="bindings[].members" \
+        --filter="bindings.role:roles/aiplatform.user AND bindings.members:$MEMBER_TYPE:$ACCOUNT" \
+        --format="value(bindings.members)" 2>/dev/null)
+    
+    if [ -n "$EXISTING_BINDING" ]; then
+        log_success "✓ Account already has Vertex AI User role"
+        return 0
+    fi
+    
+    # Grant the Vertex AI User role
+    log_info "Adding Vertex AI User role..."
+    if gcloud projects add-iam-policy-binding "$GOOGLE_CLOUD_PROJECT" \
+        --member="$MEMBER_TYPE:$ACCOUNT" \
+        --role="roles/aiplatform.user" \
+        --condition=None \
+        --quiet 2>&1 | grep -q "Updated IAM policy"; then
+        log_success "✓ Successfully granted Vertex AI User role"
+        
+        # Wait for permissions to propagate
+        log_info "Waiting for permissions to propagate (30 seconds)..."
+        sleep 30
+        
+        return 0
+    else
+        log_warn "Failed to grant permissions automatically"
+        log_warn "You may need to grant permissions manually or ask your admin"
+        log_warn "Manual command:"
+        log_warn "  gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT \\"
+        log_warn "    --member=$MEMBER_TYPE:$ACCOUNT --role=roles/aiplatform.user"
+        return 1
+    fi
+}
+
 setup_python_env() {
     log_section "Setting Up Python Environment"
     
@@ -395,6 +459,11 @@ deploy_rag_engine() {
         log_warn "Region $GOOGLE_CLOUD_REGION not supported for RAG Engine"
         log_info "Switching to us-central1"
         GOOGLE_CLOUD_REGION="us-central1"
+    fi
+    
+    # Try to grant permissions first
+    if [ "$AUTO_GRANT_PERMISSIONS" = "true" ]; then
+        grant_rag_engine_permissions
     fi
     
     # Check if RAG Engine permissions are available
