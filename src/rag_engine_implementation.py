@@ -40,7 +40,7 @@ class RAGEngineImplementation:
         vertexai.init(project=self.project_id, location=self.location)
         
         # Generation model for answer synthesis
-        self.generation_model_name = os.getenv("VERTEX_GENERATION_MODEL", "gemini-2.0-flash-exp")
+        self.generation_model_name = os.getenv("VERTEX_GENERATION_MODEL", "gemini-2.5-flash")
         self.generation_model = GenerativeModel(self.generation_model_name)
         
         # Storage client for document management
@@ -182,7 +182,7 @@ class RAGEngineImplementation:
                 # Transformation configuration (optional)
                 # rag_file_transformation_config=rag.RagFileTransformationConfig(
                 #     use_summarization=True,
-                #     summarization_model="gemini-2.0-flash-exp"
+                #     summarization_model="gemini-2.5-flash"
                 # )
             )
             

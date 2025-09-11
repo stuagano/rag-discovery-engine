@@ -194,7 +194,7 @@ configure_interactively() {
     esac
     
     echo "Available generation models:"
-    echo "  1) gemini-2.0-flash-exp (Latest, Best Performance)"
+    echo "  1) gemini-2.5-flash (Latest, Best Performance)"
     echo "  2) gemini-1.5-flash (Stable, Fast)"
     echo "  3) gemini-1.5-pro (Better Quality, Higher Cost)"
     echo "  4) text-bison@002 (Legacy)"
@@ -202,11 +202,11 @@ configure_interactively() {
     prompt_with_default "Select generation model [1-4]" "1" GEN_CHOICE
     
     case "$GEN_CHOICE" in
-        1) VERTEX_GENERATION_MODEL="gemini-2.0-flash-exp" ;;
+        1) VERTEX_GENERATION_MODEL="gemini-2.5-flash" ;;
         2) VERTEX_GENERATION_MODEL="gemini-1.5-flash" ;;
         3) VERTEX_GENERATION_MODEL="gemini-1.5-pro" ;;
         4) VERTEX_GENERATION_MODEL="text-bison@002" ;;
-        *) VERTEX_GENERATION_MODEL="gemini-2.0-flash-exp" ;;
+        *) VERTEX_GENERATION_MODEL="gemini-2.5-flash" ;;
     esac
     
     # 7. Advanced Features (BigQuery Enhanced only)

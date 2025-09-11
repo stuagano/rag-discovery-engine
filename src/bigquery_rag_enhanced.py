@@ -216,7 +216,7 @@ class BigQueryRAGEnhanced:
         self.embedding_dim = 768
         
         # Generation model
-        self.generation_model_name = os.getenv("VERTEX_GENERATION_MODEL", "gemini-2.0-flash-exp")
+        self.generation_model_name = os.getenv("VERTEX_GENERATION_MODEL", "gemini-2.5-flash")
         self.generation_model = GenerativeModel(self.generation_model_name)
         
         # Text splitter with strategy
