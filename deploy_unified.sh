@@ -235,9 +235,16 @@ setup_gcp_project() {
     gcloud config set project "$GOOGLE_CLOUD_PROJECT" 2>/dev/null
     log_info "Project set to: $GOOGLE_CLOUD_PROJECT"
     
+    # Set quota project for Application Default Credentials
+    log_info "Setting quota project for ADC..."
+    gcloud auth application-default set-quota-project "$GOOGLE_CLOUD_PROJECT" 2>/dev/null || \
+        log_warn "Could not set quota project - may affect Vertex AI authentication"
+    
     # Check if in Cloud Shell
     if [ "$CLOUD_SHELL" = true ]; then
         log_info "Running in Google Cloud Shell"
+        # In Cloud Shell, also ensure the project is set in the environment
+        export GOOGLE_CLOUD_PROJECT="$GOOGLE_CLOUD_PROJECT"
     else
         log_info "Running in local environment"
         
@@ -246,6 +253,11 @@ setup_gcp_project() {
             if ! gcloud auth application-default print-access-token &>/dev/null; then
                 log_info "Authenticating with Google Cloud..."
                 gcloud auth application-default login
+                
+                # Set quota project after authentication
+                log_info "Setting quota project after authentication..."
+                gcloud auth application-default set-quota-project "$GOOGLE_CLOUD_PROJECT" 2>/dev/null || \
+                    log_warn "Could not set quota project - may need to run manually"
             else
                 log_info "Already authenticated"
             fi
@@ -439,7 +451,33 @@ EOF
     [ "$ENABLE_CACHING" = "true" ] && echo "  ✓ Query Caching"
     [ "$ENABLE_RERANKING" = "true" ] && echo "  ✓ Result Reranking"
     
-    python3 src/bigquery_rag_enhanced.py deploy
+    # Deploy with error handling for quota project issues
+    DEPLOY_OUTPUT=$(python3 src/bigquery_rag_enhanced.py deploy 2>&1)
+    DEPLOY_EXIT_CODE=$?
+    
+    if [ $DEPLOY_EXIT_CODE -ne 0 ] && echo "$DEPLOY_OUTPUT" | grep -q "quota project"; then
+        log_warn "⚠️  Quota project error detected - attempting fix..."
+        log_info "Setting quota project for Application Default Credentials..."
+        
+        # Try to fix quota project issue
+        if gcloud auth application-default set-quota-project "$GOOGLE_CLOUD_PROJECT" 2>/dev/null; then
+            log_success "✓ Quota project set successfully"
+            log_info "Retrying deployment..."
+            python3 src/bigquery_rag_enhanced.py deploy
+        else
+            log_error "❌ Could not set quota project automatically"
+            echo "Please run manually:"
+            echo "  gcloud auth application-default set-quota-project $GOOGLE_CLOUD_PROJECT"
+            echo "Then retry: python3 src/bigquery_rag_enhanced.py deploy"
+            exit 1
+        fi
+    elif [ $DEPLOY_EXIT_CODE -ne 0 ]; then
+        log_error "❌ Deployment failed"
+        echo "$DEPLOY_OUTPUT" | head -10
+        exit 1
+    else
+        log_success "✓ BigQuery Enhanced RAG deployed successfully"
+    fi
     
     if [ "$RUN_TESTS_AFTER_DEPLOY" = "true" ]; then
         log_info "Running test query..."
