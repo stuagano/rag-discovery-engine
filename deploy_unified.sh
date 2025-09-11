@@ -586,10 +586,26 @@ EOF
     log_info "Deploying RAG Engine..."
     log_info "Parse mode: $RAG_ENGINE_PARSE_MODE"
     
-    # Try the main RAG Engine implementation
-    log_info "Attempting main RAG Engine deployment..."
-    DEPLOY_OUTPUT=$(python3 src/rag_engine_implementation.py deploy 2>&1)
-    DEPLOY_EXIT_CODE=$?
+    # Try the enhanced RAG Engine implementation first (latest API)
+    log_info "Attempting enhanced RAG Engine deployment (latest API)..."
+    if [ -f "src/rag_engine_enhanced.py" ]; then
+        DEPLOY_OUTPUT=$(python3 src/rag_engine_enhanced.py create 2>&1)
+        DEPLOY_EXIT_CODE=$?
+        
+        if [ $DEPLOY_EXIT_CODE -eq 0 ]; then
+            log_success "✓ Enhanced RAG Engine deployed successfully"
+            echo "$DEPLOY_OUTPUT"
+        else
+            log_warn "Enhanced RAG Engine failed, trying main implementation..."
+            DEPLOY_OUTPUT=$(python3 src/rag_engine_implementation.py deploy 2>&1)
+            DEPLOY_EXIT_CODE=$?
+        fi
+    else
+        # Fallback to main implementation
+        log_info "Attempting main RAG Engine deployment..."
+        DEPLOY_OUTPUT=$(python3 src/rag_engine_implementation.py deploy 2>&1)
+        DEPLOY_EXIT_CODE=$?
+    fi
     
     if [ $DEPLOY_EXIT_CODE -eq 0 ]; then
         log_success "✓ RAG Engine deployed successfully"
@@ -643,15 +659,33 @@ EOF
     
     if [ "$RUN_TESTS_AFTER_DEPLOY" = "true" ]; then
         log_info "Running test query..."
-        # Use error handling for query test
-        if python3 src/rag_engine_implementation.py query "What are the maintenance procedures?" 2>&1; then
-            log_success "✓ Test query successful"
-        else
-            log_warn "Test query failed - corpus may need time to index"
-        fi
         
-        log_info "Checking corpus status..."
-        python3 src/rag_engine_implementation.py status 2>&1 || log_warn "Could not get corpus status"
+        # Try enhanced version first, fallback to main implementation
+        if [ -f "src/rag_engine_enhanced.py" ]; then
+            log_info "Testing with enhanced RAG Engine..."
+            if python3 src/rag_engine_enhanced.py query "What are the maintenance procedures?" 2>&1; then
+                log_success "✓ Enhanced test query successful"
+            else
+                log_warn "Enhanced test query failed, trying main implementation..."
+                python3 src/rag_engine_implementation.py query "What are the maintenance procedures?" 2>&1 || \
+                    log_warn "Test query failed - corpus may need time to index"
+            fi
+            
+            log_info "Checking enhanced corpus status..."
+            python3 src/rag_engine_enhanced.py status 2>&1 || \
+                python3 src/rag_engine_implementation.py status 2>&1 || \
+                log_warn "Could not get corpus status"
+        else
+            # Fallback to main implementation
+            if python3 src/rag_engine_implementation.py query "What are the maintenance procedures?" 2>&1; then
+                log_success "✓ Test query successful"
+            else
+                log_warn "Test query failed - corpus may need time to index"
+            fi
+            
+            log_info "Checking corpus status..."
+            python3 src/rag_engine_implementation.py status 2>&1 || log_warn "Could not get corpus status"
+        fi
     fi
 }
 
