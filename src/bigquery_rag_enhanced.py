@@ -240,6 +240,38 @@ class BigQueryRAGEnhanced:
         logger.info(f"   • Hybrid Search: {self.enable_hybrid_search}")
         logger.info(f"   • Caching: {self.enable_caching}")
     
+    def fix_table_schema(self) -> bool:
+        """Fix existing table schema if it's missing required columns"""
+        
+        table_id = f"{self.project_id}.{self.dataset_id}.document_embeddings"
+        
+        try:
+            existing_table = self.bq_client.get_table(table_id)
+            existing_fields = [field.name for field in existing_table.schema]
+            
+            # Check for missing critical columns
+            required_fields = ['keywords', 'importance_score', 'summary', 'chunk_hash']
+            missing_fields = [field for field in required_fields if field not in existing_fields]
+            
+            if missing_fields:
+                logger.warning(f"🔧 Fixing table schema - missing columns: {missing_fields}")
+                
+                # Delete and recreate table with correct schema
+                self.bq_client.delete_table(table_id)
+                logger.info(f"   ✓ Deleted old table: {table_id}")
+                return True
+            else:
+                logger.info(f"   ✓ Table schema is correct")
+                return False
+                
+        except Exception as e:
+            if "not found" in str(e).lower():
+                logger.info(f"   ✓ Table doesn't exist yet - will be created")
+                return False
+            else:
+                logger.error(f"   ❌ Error checking table: {str(e)}")
+                raise e
+    
     def setup_bigquery_resources(self) -> Dict[str, Any]:
         """Create enhanced BigQuery dataset and tables"""
         
@@ -294,6 +326,31 @@ class BigQueryRAGEnhanced:
         except Exception as e:
             if "already exists" in str(e).lower():
                 logger.info(f"   ✓ Embeddings table exists: {embeddings_table_id}")
+                
+                # Verify the table has all required columns, especially 'keywords'
+                try:
+                    existing_table = self.bq_client.get_table(embeddings_table_id)
+                    existing_fields = [field.name for field in existing_table.schema]
+                    
+                    # Check for missing critical columns
+                    required_fields = ['keywords', 'importance_score', 'summary', 'chunk_hash']
+                    missing_fields = [field for field in required_fields if field not in existing_fields]
+                    
+                    if missing_fields:
+                        logger.warning(f"   ⚠️  Table missing columns: {missing_fields} - recreating table")
+                        # Delete and recreate table with correct schema
+                        self.bq_client.delete_table(embeddings_table_id)
+                        logger.info(f"   ✓ Deleted old table: {embeddings_table_id}")
+                        
+                        # Recreate with full schema
+                        embeddings_table = self.bq_client.create_table(embeddings_table)
+                        logger.info(f"   ✓ Recreated embeddings table with full schema: {embeddings_table_id}")
+                    else:
+                        logger.info(f"   ✓ Table schema is up-to-date: {embeddings_table_id}")
+                        
+                except Exception as schema_error:
+                    logger.error(f"   ❌ Error checking table schema: {str(schema_error)}")
+                    # Continue anyway, might work
             else:
                 raise e
         
@@ -1009,6 +1066,9 @@ Answer:"""
         logger.info("🚀 Starting Enhanced BigQuery RAG deployment...\n")
         
         try:
+            # Check and fix table schema if needed
+            schema_fixed = self.fix_table_schema()
+            
             # Setup BigQuery resources
             resources = self.setup_bigquery_resources()
             
@@ -1093,7 +1153,15 @@ if __name__ == "__main__":
             stats = rag.get_analytics_summary()
             print(json.dumps(stats, indent=2))
             
+        elif command == "fix-schema":
+            print("🔧 Checking and fixing BigQuery table schema...")
+            schema_fixed = rag.fix_table_schema()
+            if schema_fixed:
+                print("✅ Table schema fixed! Re-run 'deploy' to populate data.")
+            else:
+                print("✅ Table schema is already correct.")
+            
         else:
-            print("Commands: deploy, query, analytics")
+            print("Commands: deploy, query, analytics, fix-schema")
     else:
-        print("Enhanced BigQuery RAG ready. Commands: deploy, query, analytics")
+        print("Enhanced BigQuery RAG ready. Commands: deploy, query, analytics, fix-schema")
