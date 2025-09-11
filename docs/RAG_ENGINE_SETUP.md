@@ -20,17 +20,25 @@ Update your `.env` file with these settings for RAG Engine:
 GOOGLE_CLOUD_PROJECT=your-project-id
 GOOGLE_CLOUD_REGION=us-east4  # Use us-east4 instead of us-central1
 
-# Deployment Settings (use export for proper loading)
-export RAG_DEPLOYMENT_MODE=rag_engine
-export AUTO_CREATE_RESOURCES=true
-export AUTO_ENABLE_APIS=true
-export AUTO_GRANT_PERMISSIONS=true
-export VERBOSE_LOGGING=true
+# Deployment Settings (NO export needed - script uses set -a)
+RAG_DEPLOYMENT_MODE=rag_engine
+AUTO_CREATE_RESOURCES=true
+AUTO_ENABLE_APIS=true
+AUTO_GRANT_PERMISSIONS=true
+VERBOSE_LOGGING=true
 
 # Vertex AI Models
 VERTEX_EMBEDDING_MODEL=textembedding-gecko@003
 VERTEX_GENERATION_MODEL=gemini-1.5-flash
 ```
+
+## Troubleshooting
+
+### "Invalid RAG_DEPLOYMENT_MODE:" Error
+If you see deployment mode as blank, ensure:
+1. NO `export` statements in .env file (deployment script handles exporting)
+2. Use command line override: `./deploy_unified.sh --mode rag_engine`
+3. Check .env file format with `cat .env | grep RAG_DEPLOYMENT_MODE`
 
 ## Deployment Commands
 
