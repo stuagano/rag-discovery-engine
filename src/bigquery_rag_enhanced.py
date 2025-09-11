@@ -366,7 +366,7 @@ class BigQueryRAGEnhanced:
             type_=bigquery.TimePartitioningType.DAY,
             field="created_at"
         )
-        embeddings_table.clustering_fields = ["document_id", "chunk_index", "importance_score"]
+        embeddings_table.clustering_fields = ["document_id", "chunk_index"]  # Only STRING/INTEGER fields allowed
         
         try:
             embeddings_table = self.bq_client.create_table(embeddings_table)
@@ -1119,6 +1119,15 @@ Answer:"""
             
             # Setup BigQuery resources
             resources = self.setup_bigquery_resources()
+            
+            # Verify table was created successfully
+            table_id = f"{self.project_id}.{self.dataset_id}.document_embeddings"
+            try:
+                table = self.bq_client.get_table(table_id)
+                logger.info(f"   ✓ Verified table exists: {table_id}")
+            except Exception as e:
+                logger.error(f"   ❌ Table verification failed: {str(e)}")
+                raise Exception(f"Table creation failed: {str(e)}")
             
             # Generate sample documents
             from src.cloud_shell_rag import GoogleCloudRAG

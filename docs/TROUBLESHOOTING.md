@@ -37,7 +37,49 @@ pip install -r requirements.txt
 
 **Cause**: Previous versions of the deployment script would append `_basic` or `_enhanced` multiple times.
 
-**Solution**: This has been fixed in the latest version. The script now automatically removes previous suffixes before adding new ones.
+**Solutions**:
+
+#### Option 1: Automatic Cleanup (Recommended)
+```bash
+# Clean up problematic datasets automatically
+python scripts/cleanup_datasets.py
+
+# Then redeploy
+./deploy_unified.sh
+```
+
+#### Option 2: Manual Cleanup
+```bash
+# List and delete problematic datasets
+bq ls --project_id=YOUR_PROJECT_ID | grep rag
+bq rm -r -f YOUR_PROJECT_ID:rag_unified_basic_enhanced_basic_enhanced
+
+# Then redeploy
+./deploy_unified.sh
+```
+
+#### Option 3: Latest Version (Auto-fixes)
+The latest version of the deployment script automatically removes previous suffixes before adding new ones.
+
+---
+
+### ❌ Error: "Field importance_score has type FLOAT, which is not supported for clustering"
+
+**Problem**: BigQuery table creation fails because FLOAT fields cannot be used for clustering.
+
+**Cause**: The enhanced schema tries to use `importance_score` (FLOAT64) as a clustering field, but BigQuery only supports STRING, INTEGER, BOOLEAN, and TIMESTAMP for clustering.
+
+**Solution**: This has been fixed in the latest version. The clustering now only uses `document_id` and `chunk_index` fields.
+
+---
+
+### ❌ Error: "Table was not found" after deployment
+
+**Problem**: Deployment claims success but queries fail with table not found errors.
+
+**Cause**: Table creation failed but the deployment continued anyway.
+
+**Solution**: The latest version includes table verification before proceeding with data upload and queries.
 
 ---
 

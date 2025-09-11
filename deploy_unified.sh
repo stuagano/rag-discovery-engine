@@ -321,7 +321,7 @@ deploy_bigquery_basic() {
     log_section "Deploying BigQuery RAG (Basic)"
     
     # Use base dataset name and append suffix
-    BASE_DATASET=$(echo "$BIGQUERY_DATASET" | sed 's/_basic$//g' | sed 's/_enhanced$//g')
+    BASE_DATASET=$(echo "$BIGQUERY_DATASET" | sed 's/_basic//g' | sed 's/_enhanced//g')
     
     # Create/update .env for basic implementation
     cat > .env << EOF
@@ -349,7 +349,7 @@ deploy_bigquery_enhanced() {
     log_section "Deploying BigQuery RAG (Enhanced)"
     
     # Use base dataset name and append suffix
-    BASE_DATASET=$(echo "$BIGQUERY_DATASET" | sed 's/_basic$//g' | sed 's/_enhanced$//g')
+    BASE_DATASET=$(echo "$BIGQUERY_DATASET" | sed 's/_basic//g' | sed 's/_enhanced//g')
     
     # Create/update .env for enhanced implementation
     cat > .env << EOF
