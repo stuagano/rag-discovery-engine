@@ -61,24 +61,11 @@ class GoogleCloudRAG:
                 raise ValueError("GOOGLE_CLOUD_PROJECT must be set or gcloud must be configured")
         
         print(f"🔧 Initializing Google Cloud RAG for project: {self.project_id}")
-    
-    def _validate_vertex_region(self, region: str) -> str:
-        """Validate and correct region for Vertex AI compatibility"""
-        vertex_regions = {
-            'us-central1', 'us-east1', 'us-east4', 'us-west1', 'us-west2',
-            'europe-west1', 'europe-west2', 'europe-west3', 'europe-west4',
-            'asia-east1', 'asia-northeast1', 'asia-southeast1'
-        }
-        if region in vertex_regions:
-            return region
-        else:
-            print(f"⚠️ Region '{region}' not supported by Vertex AI, using us-central1")
-            return 'us-central1'
         
         # Initialize clients
         self.bq_client = bigquery.Client(project=self.project_id)
         
-        # Initialize Vertex AI
+        # Validate and initialize Vertex AI
         self.region = self._validate_vertex_region(self.region)
         vertexai.init(project=self.project_id, location=self.region)
         
@@ -88,7 +75,7 @@ class GoogleCloudRAG:
         self.embedding_dim = 768  # Gecko embedding dimension
         
         # Vertex AI Generative Model for answer synthesis
-        self.generation_model_name = os.getenv("VERTEX_GENERATION_MODEL", "gemini-1.5-flash")
+        self.generation_model_name = os.getenv("VERTEX_GENERATION_MODEL", "gemini-2.5-flash")
         self.generation_model = GenerativeModel(self.generation_model_name)
         
         # Text splitter
@@ -103,6 +90,19 @@ class GoogleCloudRAG:
         print(f"   • Embedding Model: {self.embedding_model_name}")
         print(f"   • Generation Model: {self.generation_model_name}")
         print(f"   • BigQuery Dataset: {self.dataset_id}")
+    
+    def _validate_vertex_region(self, region: str) -> str:
+        """Validate and correct region for Vertex AI compatibility"""
+        vertex_regions = {
+            'us-central1', 'us-east1', 'us-east4', 'us-west1', 'us-west2',
+            'europe-west1', 'europe-west2', 'europe-west3', 'europe-west4',
+            'asia-east1', 'asia-northeast1', 'asia-southeast1'
+        }
+        if region in vertex_regions:
+            return region
+        else:
+            print(f"⚠️ Region '{region}' not supported by Vertex AI, using us-central1")
+            return 'us-central1'
     
     def setup_bigquery_resources(self) -> Dict[str, Any]:
         """Create BigQuery dataset and tables optimized for vector search"""
