@@ -374,21 +374,35 @@ grant_rag_engine_permissions() {
 setup_python_env() {
     log_section "Setting Up Python Environment"
     
-    # Create virtual environment if not exists
-    if [ ! -d "venv" ]; then
-        log_info "Creating virtual environment..."
-        python3 -m venv venv
+    # Skip if running in Cloud Shell with dependencies already installed
+    if [ "$CLOUD_SHELL" = "true" ]; then
+        # Quick check if key packages are already installed
+        if python3 -c "import vertexai, google.cloud.bigquery" 2>/dev/null; then
+            log_info "Python packages already installed (Cloud Shell)"
+            return
+        fi
     fi
     
-    # Activate virtual environment
-    source venv/bin/activate
+    # Create virtual environment if not exists and not in Cloud Shell
+    if [ "$CLOUD_SHELL" != "true" ] && [ ! -d "venv" ]; then
+        log_info "Creating virtual environment..."
+        python3 -m venv venv
+        source venv/bin/activate
+    elif [ -d "venv" ]; then
+        source venv/bin/activate
+    fi
     
-    # Upgrade pip
-    pip install --upgrade pip --quiet
-    
-    # Install requirements
-    log_info "Installing Python packages..."
-    pip install -r requirements.txt --quiet
+    # Check if packages are already installed
+    if pip show vertexai google-cloud-bigquery google-cloud-storage &>/dev/null; then
+        log_info "Required packages already installed"
+    else
+        # Upgrade pip quietly
+        pip install --upgrade pip --quiet
+        
+        # Install requirements
+        log_info "Installing Python packages (this may take a moment)..."
+        pip install -r requirements.txt --quiet
+    fi
     
     log_info "Python environment ready"
 }
